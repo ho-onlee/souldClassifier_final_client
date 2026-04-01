@@ -1,11 +1,10 @@
 import argparse
 import sys
-from multiprocessing import Process, Queue
-import pyaudio
-import numpy as np
+from multiprocessing import Process
 import wave
 import time, datetime
 import os
+import sounddevice as sd
 
 
 class AudioRecorder:
@@ -40,7 +39,7 @@ class AudioRecorder:
         name = f"recording_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}.wav"
         with wave.open(os.path.join(self.output_path, name), "wb") as wav_file:
             wav_file.setnchannels(self.channels)
-            wav_file.setsampwidth(pyaudio.PyAudio().get_sample_size(pyaudio.paInt16))
+            wav_file.setsampwidth(2)
             wav_file.setframerate(self.sample_rate)
             wav_file.writeframes(b"".join(frames))
         sys.stdout.write("\r                                                          ")
@@ -69,25 +68,21 @@ class AudioRecorder:
         
     def record_audio(self) -> None:
         """Record audio from the default input device and save it as a WAV file."""
-        audio = pyaudio.PyAudio()
-        sample_format = pyaudio.paInt16
-
         stream = None
         frame1_buffer = []
         frame2_buffer = []
-        frame_number = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
         animation_process = Process(target=self.start_animation, daemon=True)
         
 
         try:
-            stream = audio.open(
-                format=sample_format,
+            stream = sd.InputStream(
                 channels=self.channels,
-                rate=self.sample_rate,
-                input=True,
-                frames_per_buffer=self.chunk_size,
-                input_device_index=self.source_index
+                samplerate=self.sample_rate,
+                device=self.source_index,
+                dtype="int16",
+                blocksize=self.chunk_size,
             )
+            stream.start()
 
             should_frame2_record = False
             total_chunks = int(self.sample_rate / self.chunk_size * self.duration_seconds)
@@ -95,7 +90,8 @@ class AudioRecorder:
             
             animation_process.start()
             while True:
-                frame = stream.read(self.chunk_size, exception_on_overflow=False)
+                frame, _ = stream.read(self.chunk_size)
+                frame = frame.tobytes()
 
                 frame1_buffer.append(frame)
                 if len(frame1_buffer) >= total_chunks // 2 and not should_frame2_record:
@@ -118,10 +114,8 @@ class AudioRecorder:
         finally:
             print(len(frame1_buffer), len(frame2_buffer))
             if stream is not None:
-                stream.stop_stream()
+                stream.stop()
                 stream.close()
-
-            audio.terminate()
 
 
 def parse_args() -> argparse.Namespace:
@@ -150,14 +144,13 @@ def parse_args() -> argparse.Namespace:
 
 if __name__ == "__main__":
     args = parse_args()
+    print(args._get_args())
     if args.source is not None:
         print(f"Using audio input device index: {args.source}")
     else:
-        p = pyaudio.PyAudio()
-        for i in range(p.get_device_count()):
-            info = p.get_device_info_by_index(i)
-            print(f"[{i}] {info['name']}  (inputs={info['maxInputChannels']}, outputs={info['maxOutputChannels']})")
-        p.terminate()
+        devices = sd.query_devices()
+        for i, info in enumerate(devices):
+            print(f"[{i}] {info['name']}  (inputs={info['max_input_channels']}, outputs={info['max_output_channels']})")
         args.source = int(input("Enter the audio input device index to use: "))
 
         
