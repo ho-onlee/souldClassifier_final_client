@@ -15,7 +15,7 @@ class AudioRecorder:
         sample_rate: int = 44100,
         channels: int = 1,
         chunk_size: int = 1024,
-        source_index: int = None
+        source_index: str = ""
     ):
         self.output_path = output_path
         if not os.path.exists(self.output_path):
@@ -135,7 +135,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "-d",
         "--duration",
-        type=int,
+        type=str,
         default=10,
         help="Recording duration in seconds (default: 10)",
     )

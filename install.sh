@@ -8,7 +8,8 @@ if [ ! -d ".venv" ]; then
 else
     echo "Virtual environment already exists."
 fi
-
+sudo apt update
+sudo apt install portaudio19-dev portaudio19-doc
 # Activate the virtual environment
 echo "Activating virtual environment..."
 
