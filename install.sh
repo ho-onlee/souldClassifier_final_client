@@ -1,12 +1,18 @@
 #!/bin/bash
 
-# Create a new virtual environment
-echo "Creating virtual environment..."
-python -m venv .venv
+# Check if virtual environment already exists
+if [ ! -d ".venv" ]; then
+    # Create a new virtual environment
+    echo "Creating virtual environment..."
+    python -m venv .venv
+else
+    echo "Virtual environment already exists."
+fi
 
 # Activate the virtual environment
 echo "Activating virtual environment..."
-source .venv/Scripts/activate
+
+source .venv/bin/activate
 
 # Upgrade pip
 echo "Upgrading pip..."
@@ -22,5 +28,5 @@ pip install \
 
 echo "Installation complete!"
 echo "To activate the virtual environment in the future, run:"
-echo "  source .venv/Scripts/activate"
-source .venv/Scripts/activate
+echo "  source .venv/bin/activate"
+source .venv/bin/activate
