@@ -13,6 +13,11 @@ def db_level(time_interval):
     while True:
         db_levels.append([datetime.datetime.now(), meter.read_decibel()])
         time.sleep(time_interval)
+        if len(db_levels) > 1000:
+            with open(os.path.join("Recordings", f"db_levels_{datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.csv"), "a") as f:
+                for timestamp, db in db_levels:
+                    f.write(f"{timestamp},{db}\n")
+            db_levels.clear()
 
 def start_db_monitoring(time_interval=0.01):
     db_process = Process(target=db_level, args=(time_interval,), daemon=True)
