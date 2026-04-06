@@ -6,7 +6,6 @@ from multiprocessing import Process
 
 def callback(frames):
     print(f"\nSaved {len(frames)} frames to WAV file.")
-    print(f"\ndb Level: {meter.read_decibel()} dB SPL")
 
 def db_level(time_interval):
     db_levels = []
@@ -19,9 +18,6 @@ def db_level(time_interval):
                     f.write(f"{timestamp},{db}\n")
             db_levels.clear()
 
-def start_db_monitoring(time_interval=0.01):
-    db_process = Process(target=db_level, args=(time_interval,), daemon=True)
-    db_process.start()
 
 if __name__ == "__main__":
     recorder = record_audio.AudioRecorder(
@@ -32,5 +28,7 @@ if __name__ == "__main__":
     meter = decibel_meter.DecibelMeter()
     meter.set_averaging_time_ms(125)
     recorder.setCallback(callback)
-    recorder.start_stream()
-    start_db_monitoring()
+    audio_stream = Process(target=recorder.start_stream, daemon=True)
+    audio_stream.start()
+    db_process = Process(target=db_level, args=(0.01,), daemon=True)
+    db_process.start()
