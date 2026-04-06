@@ -1,18 +1,22 @@
 import src.record_audio as record_audio
 import src.decibel_meter as decibel_meter
+import datetime, time
+import os
+from multiprocessing import Process
 
 def callback(frames):
     print(f"\nSaved {len(frames)} frames to WAV file.")
     print(f"\ndb Level: {meter.read_decibel()} dB SPL")
 
-def log_db_level():
-    with open(f"db_levels_{record_audio.get_timestamp()}.txt", "w") as f:
-        while True:
-            db_level = meter.read_decibel()
-            timestamp = record_audio.get_timestamp()
-            f.write(f"{timestamp}: {db_level} dB SPL\n")
-            f.flush()
-    print(f"\ndb Level: {meter.read_decibel()} dB SPL")
+def db_level(time_interval):
+    db_levels = []
+    while True:
+        db_levels.append([datetime.datetime.now(), meter.read_decibel()])
+        time.sleep(time_interval)
+
+def start_db_monitoring(time_interval=0.01):
+    db_process = Process(target=db_level, args=(time_interval,), daemon=True)
+    db_process.start()
 
 if __name__ == "__main__":
     recorder = record_audio.AudioRecorder(
@@ -24,3 +28,4 @@ if __name__ == "__main__":
     meter.set_averaging_time_ms(125)
     recorder.setCallback(callback)
     recorder.start_stream()
+    start_db_monitoring()
