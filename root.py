@@ -32,3 +32,5 @@ if __name__ == "__main__":
     audio_stream.start()
     db_process = Process(target=db_level, args=(0.01,), daemon=True)
     db_process.start()
+    audio_stream.join()
+    db_process.join()
